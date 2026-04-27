@@ -122,6 +122,15 @@
                 let distance = Math.hypot(dx, dy);
                 let angle = Math.atan2(dy, dx);
 
+                //Enemy collision
+                if (distance > targetDistance + 5) {
+                    enemy.x += Math.cos(angle) * enemy.speed;
+                    enemy.y += Math.sin(angle) * enemy.speed;
+                } else if (distance < targetDistance - 5) {
+                    enemy.x -= Math.cos(angle) * enemy.speed;
+                    enemy.y -= Math.sin(angle) * enemy.speed;
+                }
+
                 // Advance or Retreat
                 if (distance > targetDistance + 5) {
                     enemy.x += Math.cos(angle) * enemy.speed; // Move closer
