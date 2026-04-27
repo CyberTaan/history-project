@@ -3,9 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>History Project</title>
+    <style>
+        canvas { border: 2px solid black; background: #090909f0; }
+    </style>
 </head>
 <body>
-    <h1>Hello, world!</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let player = { x: 50, y: 50, size: 30, color: "blue" };
+
+        function draw() {
+            // 1. Clear the screen
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Draw the player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+
+            // 3. Request the next frame (The Loop)
+            requestAnimationFrame(draw);
+        }
+
+        // Listen for keys
+        window.addEventListener("keydown", (e) => {
+            if(e.key === "ArrowRight") player.x += 10;
+            if(e.key === "ArrowLeft")  player.x -= 10;
+            if(e.key === "ArrowUp")    player.y -= 10;
+            if(e.key === "ArrowDown")  player.y += 10;
+        });
+
+        draw(); // Start the game
+    </script>
 </body>
 </html>
