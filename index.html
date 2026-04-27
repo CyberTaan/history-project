@@ -9,35 +9,118 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div id="scoreBoard">Score: <span id="score">0</span></div>
+    
+    <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        
+        // Make the canvas fill the whole browser window
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        let player = { x: 50, y: 50, size: 30, color: "blue" };
+        // Game Variables
+        let score = 0;
+        const scoreElement = document.getElementById("score");
 
-        function draw() {
-            // 1. Clear the screen
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // The Player (Red Dot)
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 15,
+            color: "red",
+            speed: 5
+        };
 
-            // 2. Draw the player
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.size, player.size);
+        // The Collectibles (Yellow Dots)
+        let dots = [];
+        const dotCount = 15;
 
-            // 3. Request the next frame (The Loop)
-            requestAnimationFrame(draw);
+        // Function to scatter random yellow dots
+        function spawnDots() {
+            for (let i = 0; i < dotCount; i++) {
+                dots.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: Math.random() * (canvas.height - 40) + 20,
+                    radius: 8,
+                    color: "yellow"
+                });
+            }
+        }
+        spawnDots(); // Spawn the first batch
+
+        // Better movement system: tracking if a key is currently held down
+        const keys = {
+            ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
+        };
+
+        window.addEventListener("keydown", (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+        window.addEventListener("keyup",   (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
+
+        function update() {
+            // 1. Move Player smoothly
+            if (keys.ArrowUp) player.y -= player.speed;
+            if (keys.ArrowDown) player.y += player.speed;
+            if (keys.ArrowLeft) player.x -= player.speed;
+            if (keys.ArrowRight) player.x += player.speed;
+
+            // Keep player inside the screen bounds
+            if (player.x < player.radius) player.x = player.radius;
+            if (player.x > canvas.width - player.radius) player.x = canvas.width - player.radius;
+            if (player.y < player.radius) player.y = player.radius;
+            if (player.y > canvas.height - player.radius) player.y = canvas.height - player.radius;
+
+            // 2. Check for Collisions
+            for (let i = 0; i < dots.length; i++) {
+                let dot = dots[i];
+                
+                // Calculate distance between center of player and center of dot
+                let dist = Math.hypot(player.x - dot.x, player.y - dot.y);
+
+                // If distance is less than both radii combined, they are touching!
+                if (dist - player.radius - dot.radius < 1) {
+                    dots.splice(i, 1);       // Remove the dot from the array
+                    score += 10;             // Add points
+                    scoreElement.innerText = score; // Update HTML text
+                    i--;                     // Adjust array index after removing an item
+                }
+            }
+
+            // Respawn dots if you collect them all
+            if (dots.length === 0) spawnDots();
         }
 
-        // Listen for keys
-        window.addEventListener("keydown", (e) => {
-            if(e.key === "ArrowRight") player.x += 10;
-            if(e.key === "ArrowLeft")  player.x -= 10;
-            if(e.key === "ArrowUp")    player.y -= 10;
-            if(e.key === "ArrowDown")  player.y += 10;
-        });
+        function draw() {
+            // Clear the canvas for the new frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        draw(); // Start the game
+            // Draw all yellow dots
+            dots.forEach(dot => {
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+                ctx.fillStyle = dot.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+
+            // Draw the red player dot
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = player.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // The main game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop(); // Start the engine
     </script>
 </body>
 </html>
