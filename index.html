@@ -6,6 +6,15 @@
     <title>History Project</title>
     <style>
         canvas { border: 2px solid black; background: #090909f0; }
+        #scoreBoard {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -30,12 +39,14 @@
             x: canvas.width / 2,
             y: canvas.height / 2,
             radius: 15,
-            color: "red",
+            color: "blue",
             speed: 5
         };
 
         // The Collectibles (Yellow Dots)
         let dots = [];
+        let enemies = [];
+        let projectiles = [];
         const dotCount = 15;
 
         // Function to scatter random yellow dots
@@ -49,8 +60,19 @@
                 });
             }
         }
+        function spawnEnemies() {
+            // Spawn 3 enemies at random edges
+            for (let i = 0; i < 3; i++) {
+                enemies.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() > 0.5 ? 0 : canvas.height,
+                    radius: 15, color: "red", speed: 2, 
+                    shootCooldown: Math.random() * 100 // Randomize first shot
+                });
+            }
+        }
         spawnDots(); // Spawn the first batch
-
+        spawnEnemies();
         // Better movement system: tracking if a key is currently held down
         const keys = {
             ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
@@ -90,6 +112,72 @@
 
             // Respawn dots if you collect them all
             if (dots.length === 0) spawnDots();
+            // 3. Enemy AI (Move & Shoot)
+            const targetDistance = 200;
+
+            enemies.forEach(enemy => {
+                // Find angle and distance to player
+                let dx = player.x - enemy.x;
+                let dy = player.y - enemy.y;
+                let distance = Math.hypot(dx, dy);
+                let angle = Math.atan2(dy, dx);
+
+                // Advance or Retreat
+                if (distance > targetDistance + 5) {
+                    enemy.x += Math.cos(angle) * enemy.speed; // Move closer
+                    enemy.y += Math.sin(angle) * enemy.speed;
+                } else if (distance < targetDistance - 5) {
+                    enemy.x -= Math.cos(angle) * enemy.speed; // Back away
+                    enemy.y -= Math.sin(angle) * enemy.speed;
+                }
+
+                // Shoot Logic
+                enemy.shootCooldown--;
+                if (enemy.shootCooldown <= 0) {
+                    projectiles.push({
+                        x: enemy.x, y: enemy.y,
+                        width: 10, height: 10, color: "white",
+                        vx: Math.cos(angle) * 4, // Projectile speed is 4
+                        vy: Math.sin(angle) * 4
+                    });
+                    enemy.shootCooldown = 90; // Wait 90 frames (~1.5 seconds) before next shot
+                }
+            });
+
+            // 4. Update Projectiles & Check Player Collision
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Circle (Player) vs Rectangle (Projectile) collision
+                let testX = player.x;
+                let testY = player.y;
+
+                // Find closest edges
+                if (player.x < p.x) testX = p.x; 
+                else if (player.x > p.x + p.width) testX = p.x + p.width;
+                
+                if (player.y < p.y) testY = p.y; 
+                else if (player.y > p.y + p.height) testY = p.y + p.height;
+
+                let distX = player.x - testX;
+                let distY = player.y - testY;
+                let hitDistance = Math.hypot(distX, distY);
+
+                // If hit, reset score and destroy projectile
+                if (hitDistance <= player.radius) {
+                    score = 0;
+                    scoreElement.innerText = score;
+                    projectiles.splice(i, 1);
+                    continue;
+                }
+
+                // Remove projectiles that go off-screen
+                if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+                    projectiles.splice(i, 1);
+                }
+            }
         }
 
         function draw() {
@@ -105,12 +193,18 @@
                 ctx.closePath();
             });
 
-            // Draw the red player dot
+            // Draw the blue player dot
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             ctx.fillStyle = player.color;
             ctx.fill();
             ctx.closePath();
+
+            // Draw Enemies
+            enemies.forEach(enemy => {
+                ctx.beginPath(); ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                ctx.fillStyle = enemy.color; ctx.fill(); ctx.closePath();
+            });
         }
 
         // The main game loop
