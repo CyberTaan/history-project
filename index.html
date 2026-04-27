@@ -200,6 +200,13 @@
             ctx.fill();
             ctx.closePath();
 
+            // Draw Projectiles (White Rectangles)
+            projectiles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+
+            });
+
             // Draw Enemies
             enemies.forEach(enemy => {
                 ctx.beginPath(); ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
